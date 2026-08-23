@@ -1,0 +1,10 @@
+{
+  "name": "my-collection",
+  "version": "1.0.0",
+  "description": "極簡收藏清單：PM 學習前後端協作的範例專案",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

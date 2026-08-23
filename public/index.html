@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>我的收藏清單</title>
+<style>
+  body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+  .card { border: 1px solid #ddd; border-radius: 8px; padding: .8rem 1rem; margin-bottom: .5rem; display: flex; justify-content: space-between; align-items: center; }
+  input, select, button { padding: .5rem; margin-right: .5rem; border-radius: 6px; border: 1px solid #ccc; }
+  button { cursor: pointer; background: #2563eb; color: #fff; border: none; }
+  button.del { background: #dc2626; }
+  .msg { color: #c00; min-height: 1.4rem; margin: .5rem 0; }
+</style>
+</head>
+<body>
+<h1>我的收藏清單</h1>
+<!-- LEARN: 表單收集使用者輸入；這裡不用傳統 submit 整頁跳轉，而是用 JS 打 API（SPA 基本概念） -->
+<div>
+  <select id="type"><option value="book">書籍</option><option value="movie">電影</option></select>
+  <input id="title" placeholder="輸入名稱（書籍會自動補年份）">
+  <button onclick="addItem()">新增</button>
+</div>
+<div class="msg" id="msg"></div>
+<ul id="list" style="list-style:none;padding:0"></ul>
+
+<script>
+// LEARN: Fetch API = 前端跟後端講話的標準方式；是非同步，所以用 async/await 讓程式碼像同步一樣好讀
+async function loadItems() {
+  const r = await fetch('/api/items');
+  const items = await r.json();
+  document.getElementById('list').innerHTML = items.map(i => `
+    <li class="card"><span>${i.type}｜${i.title}${i.year ? ' (' + i.year + ')' : ''}</span>
+    <button class="del" onclick="delItem(${i.id})">刪除</button></li>`).join('');
+}
+
+async function addItem() {
+  const type = document.getElementById('type').value;
+  const title = document.getElementById('title').value.trim();
+  const msg = document.getElementById('msg');
+  if (!title) return;
+  // LEARN: POST 要帶 method、headers（告訴後端是 JSON）、body（字串化的資料）
+  const r = await fetch('/api/items', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type, title })
+  });
+  if (r.status === 429) { msg.textContent = '新增太頻繁，請等一分鐘（429 Rate Limit）'; }
+  else { msg.textContent = ''; document.getElementById('title').value = ''; loadItems(); }
+}
+
+async function delItem(id) {
+  // LEARN: DELETE 方法；RESTful 風格把 id 放在 URL，而不是 body
+  await fetch('/api/items/' + id, { method: 'DELETE' });
+  loadItems();
+}
+
+loadItems(); // LEARN: 頁面載入時先拉一次列表
+</script>
+</body>
+</html>

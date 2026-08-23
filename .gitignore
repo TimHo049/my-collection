@@ -1,0 +1,9 @@
+# LEARN: .gitignore 告訴 Git 哪些檔案不要進版控
+# node_modules 是套件安裝目錄，體積大且可由 package.json 重現，不該 commit
+node_modules/
+# LEARN: .env 通常含密鑰/密碼，絕對不能進 Git，否則等於把鑰匙貼在門上
+.env
+# SQLite 資料檔是執行期產物，不進版控（避免團隊每個人資料互相覆蓋）
+collection.db
+*.log
+.DS_Store
