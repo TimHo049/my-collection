@@ -151,3 +151,10 @@ my-collection/
 │   └── index.html     # 前端：HTML + CSS + JS（Fetch API）
 └── README.md
 ```
+
+---
+
+## 分支演示（Branch Demo）
+
+呢行係喺 feature/add-branch-demo 分支加入嘅，用嚟演示 branch 工作流。
+
