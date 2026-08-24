@@ -2,59 +2,305 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>我的收藏清單</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的收藏清單 — 升級版</title>
 <style>
-  body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; color: #222; }
-  .card { border: 1px solid #ddd; border-radius: 8px; padding: .8rem 1rem; margin-bottom: .5rem; display: flex; justify-content: space-between; align-items: center; }
-  input, select, button { padding: .5rem; margin-right: .5rem; border-radius: 6px; border: 1px solid #ccc; }
-  button { cursor: pointer; background: #2563eb; color: #fff; border: none; }
-  button.del { background: #dc2626; }
-  .msg { color: #c00; min-height: 1.4rem; margin: .5rem 0; }
+  /* LEARN: CSS 變數 = 設計系統嘅顏色/間距定義，PM 對應 Brand Guideline 同 UI Style Guide */
+  :root { --primary:#2563eb; --danger:#dc2626; --bg:#f8fafc; --card:#fff; --border:#e2e8f0; --text:#1e293b; --muted:#64748b; --star:#f59e0b; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:var(--bg); color:var(--text); padding:1rem; }
+  /* LEARN: 左右兩欄佈局 = Dashboard 常見 pattern；左欄操作+統計，右欄列表+日誌 */
+  .layout { display:grid; grid-template-columns:340px 1fr; gap:1rem; max-width:1200px; margin:0 auto; }
+  .panel { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:1rem; margin-bottom:1rem; }
+  .panel h2 { font-size:1rem; margin-bottom:.75rem; display:flex; justify-content:space-between; align-items:center; }
+  .env-badge { font-size:.7rem; padding:.15rem .5rem; border-radius:999px; background:#dbeafe; color:#1e40af; }
+  /* LEARN: 統計儀表板 = KPI 卡片；PM 對應 Dashboard 嘅 metrics display */
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:.5rem; margin-bottom:1rem; }
+  .stat { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:.6rem; text-align:center; }
+  .stat .num { font-size:1.4rem; font-weight:700; color:var(--primary); }
+  .stat .label { font-size:.7rem; color:var(--muted); }
+  /* LEARN: 分類頁籤 = Tab navigation；PM 對應資訊架構(IA)嘅分類 */
+  .tabs { display:flex; gap:.25rem; margin-bottom:.75rem; }
+  .tab { padding:.4rem .8rem; border:1px solid var(--border); border-radius:6px; background:#fff; cursor:pointer; font-size:.85rem; }
+  .tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+  input,select,textarea { width:100%; padding:.5rem; border:1px solid var(--border); border-radius:6px; font-size:.85rem; margin-bottom:.5rem; }
+  button { padding:.5rem 1rem; border:none; border-radius:6px; cursor:pointer; font-size:.85rem; font-weight:500; }
+  .btn-primary { background:var(--primary); color:#fff; }
+  .btn-danger { background:var(--danger); color:#fff; }
+  .btn-secondary { background:#e2e8f0; color:var(--text); }
+  .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+  /* LEARN: 星級評分 = Rating component；PM 對應 User Feedback 收集 */
+  .stars { display:flex; gap:.15rem; margin-bottom:.5rem; }
+  .star { cursor:pointer; font-size:1.2rem; color:#cbd5e1; }
+  .star.filled { color:var(--star); }
+  .item { display:flex; justify-content:space-between; align-items:center; padding:.6rem; border:1px solid var(--border); border-radius:8px; margin-bottom:.4rem; background:#fff; }
+  .item-info { flex:1; }
+  .item-title { font-weight:600; font-size:.9rem; }
+  .item-meta { font-size:.75rem; color:var(--muted); }
+  .item-actions { display:flex; gap:.3rem; }
+  .item-actions button { padding:.3rem .6rem; font-size:.75rem; }
+  /* LEARN: Modal = 彈窗；背景變暗置中，PM 對應 Overlay/Dialog pattern */
+  .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.5); justify-content:center; align-items:center; z-index:100; }
+  .modal-overlay.show { display:flex; }
+  .modal { background:#fff; border-radius:12px; padding:1.5rem; width:90%; max-width:400px; }
+  .modal h3 { margin-bottom:1rem; }
+  /* LEARN: 系統事件日誌 = Activity Log；模擬 Webhook 通知 + Audit Trail，PM 對應合規追蹤 */
+  .log-list { max-height:200px; overflow-y:auto; font-size:.75rem; }
+  .log-entry { padding:.3rem 0; border-bottom:1px solid var(--border); }
+  .log-time { color:var(--muted); }
+  .log-action { font-weight:600; color:var(--primary); }
+  .rate-info { font-size:.75rem; color:var(--muted); margin-top:.25rem; }
+  .rate-warning { color:var(--danger); font-weight:600; }
+  .search-row { display:flex; gap:.5rem; margin-bottom:.75rem; }
+  .search-row input { flex:1; margin-bottom:0; }
+  .form-tabs { display:flex; gap:.25rem; margin-bottom:.75rem; border-bottom:1px solid var(--border); }
+  .form-tab { padding:.4rem .8rem; cursor:pointer; font-size:.85rem; border-bottom:2px solid transparent; }
+  .form-tab.active { border-bottom-color:var(--primary); color:var(--primary); font-weight:600; }
+  .form-section { display:none; }
+  .form-section.active { display:block; }
 </style>
 </head>
 <body>
-<h1>我的收藏清單</h1>
-<!-- LEARN: 表單收集使用者輸入；這裡不用傳統 submit 整頁跳轉，而是用 JS 打 API（SPA 基本概念） -->
-<div>
-  <select id="type"><option value="book">書籍</option><option value="movie">電影</option></select>
-  <input id="title" placeholder="輸入名稱（書籍會自動補年份）">
-  <button onclick="addItem()">新增</button>
+
+<!-- LEARN: 頂部標題列 + 環境標籤；NODE_ENV 從後端 /api/env 讀取，PM 要確認上線顯示 production -->
+<div style="max-width:1200px;margin:0 auto 1rem;display:flex;justify-content:space-between;align-items:center;">
+  <h1 style="font-size:1.3rem;">我的收藏清單 <span style="font-size:.8rem;color:var(--muted);">升級版</span></h1>
+  <span class="env-badge" id="envBadge">載入中...</span>
 </div>
-<div class="msg" id="msg"></div>
-<ul id="list" style="list-style:none;padding:0"></ul>
+
+<div class="layout">
+  <!-- ===== 左欄：操作 + 統計 ===== -->
+  <div>
+    <!-- LEARN: 統計儀表板 KPI 卡片 -->
+    <div class="stats">
+      <div class="stat"><div class="num" id="statTotal">0</div><div class="label">總數</div></div>
+      <div class="stat"><div class="num" id="statBooks">0</div><div class="label">書籍</div></div>
+      <div class="stat"><div class="num" id="statMovies">0</div><div class="label">電影</div></div>
+      <div class="stat"><div class="num" id="statAvg">0</div><div class="label">平均評分</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="form-tabs">
+        <div class="form-tab active" onclick="switchForm('add')">新增收藏</div>
+        <div class="form-tab" onclick="switchForm('contact')">聯絡查詢</div>
+      </div>
+
+      <!-- LEARN: 新增收藏表單 -->
+      <div id="formAdd" class="form-section active">
+        <select id="addType"><option value="book">書籍</option><option value="movie">電影</option></select>
+        <input id="addTitle" placeholder="輸入名稱（書籍會自動補年份）">
+        <div class="stars" id="addStars">
+          <span class="star" data-v="1">★</span><span class="star" data-v="2">★</span><span class="star" data-v="3">★</span><span class="star" data-v="4">★</span><span class="star" data-v="5">★</span>
+        </div>
+        <input type="hidden" id="addRating" value="0">
+        <button class="btn-primary" id="addBtn" onclick="addItem()" style="width:100%;">新增收藏</button>
+        <!-- LEARN: Rate Limit 顯示；達標時警告，PM 對應配額管理體驗 -->
+        <div class="rate-info" id="rateInfo">今日可新增次數：載入中...</div>
+      </div>
+
+      <!-- LEARN: 聯絡查詢表單（email/name/phone/message），內容存 SQLite contacts 表 -->
+      <div id="formContact" class="form-section">
+        <input id="cName" placeholder="姓名 *">
+        <input id="cEmail" type="email" placeholder="電郵 *">
+        <input id="cPhone" placeholder="電話">
+        <textarea id="cMessage" placeholder="查詢訊息" rows="3"></textarea>
+        <button class="btn-primary" onclick="submitContact()" style="width:100%;">提交查詢</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 右欄：列表 + 日誌 ===== -->
+  <div>
+    <!-- LEARN: 搜尋 + 匯出 -->
+    <div class="panel">
+      <div class="search-row">
+        <input id="searchInput" placeholder="即時搜尋..." oninput="loadItems()">
+        <button class="btn-secondary" onclick="exportJSON()">匯出 JSON</button>
+      </div>
+      <!-- LEARN: 分類頁籤 -->
+      <div class="tabs">
+        <div class="tab active" data-type="all" onclick="switchTab(this)">全部</div>
+        <div class="tab" data-type="book" onclick="switchTab(this)">書籍</div>
+        <div class="tab" data-type="movie" onclick="switchTab(this)">電影</div>
+      </div>
+      <div id="itemList"></div>
+    </div>
+
+    <!-- LEARN: 系統事件日誌（模擬 Webhook / Logging / Audit Trail） -->
+    <div class="panel">
+      <h2>系統事件日誌 <span style="font-size:.7rem;color:var(--muted);">模擬 Webhook + Logging</span></h2>
+      <div class="log-list" id="logList"><div style="color:var(--muted);">載入中...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- LEARN: Modal 編輯彈窗（背景變暗置中） -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3>編輯收藏</h3>
+    <input type="hidden" id="editId">
+    <select id="editType"><option value="book">書籍</option><option value="movie">電影</option></select>
+    <input id="editTitle" placeholder="名稱">
+    <input id="editYear" placeholder="年份">
+    <div class="stars" id="editStars">
+      <span class="star" data-v="1">★</span><span class="star" data-v="2">★</span><span class="star" data-v="3">★</span><span class="star" data-v="4">★</span><span class="star" data-v="5">★</span>
+    </div>
+    <input type="hidden" id="editRating" value="0">
+    <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+      <button class="btn-primary" onclick="saveEdit()" style="flex:1;">儲存</button>
+      <button class="btn-secondary" onclick="closeModal()" style="flex:1;">取消</button>
+    </div>
+  </div>
+</div>
 
 <script>
-// LEARN: Fetch API = 前端跟後端講話的標準方式；是非同步，所以用 async/await 讓程式碼像同步一樣好讀
-async function loadItems() {
-  const r = await fetch('/api/items');
-  const items = await r.json();
-  document.getElementById('list').innerHTML = items.map(i => `
-    <li class="card"><span>${i.type}｜${i.title}${i.year ? ' (' + i.year + ')' : ''}</span>
-    <button class="del" onclick="delItem(${i.id})">刪除</button></li>`).join('');
+let currentType = 'all';
+let addRatingVal = 0, editRatingVal = 0;
+
+// LEARN: 星星評分組件；點擊設定評分，PM 對應 Rating UI pattern
+function setupStars(containerId, hiddenId, ratingVar) {
+  const stars = document.querySelectorAll(`#${containerId} .star`);
+  stars.forEach(s => s.addEventListener('click', () => {
+    const v = parseInt(s.dataset.v);
+    if (ratingVar === 'add') { addRatingVal = v; document.getElementById(hiddenId).value = v; }
+    else { editRatingVal = v; document.getElementById(hiddenId).value = v; }
+    stars.forEach((st, i) => st.classList.toggle('filled', i < v));
+  }));
+}
+setupStars('addStars', 'addRating', 'add');
+setupStars('editStars', 'editRating', 'edit');
+
+function renderStars(rating) {
+  return Array.from({length:5}, (_,i) => `<span style="color:${i<rating?'var(--star)':'#cbd5e1'}">★</span>`).join('');
 }
 
-async function addItem() {
-  const type = document.getElementById('type').value;
-  const title = document.getElementById('title').value.trim();
-  const msg = document.getElementById('msg');
-  if (!title) return;
-  // LEARN: POST 要帶 method、headers（告訴後端是 JSON）、body（字串化的資料）
-  const r = await fetch('/api/items', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type, title })
-  });
-  if (r.status === 429) { msg.textContent = '新增太頻繁，請等一分鐘（429 Rate Limit）'; }
-  else { msg.textContent = ''; document.getElementById('title').value = ''; loadItems(); }
+// LEARN: 表單切換（新增收藏 / 聯絡查詢）
+function switchForm(name) {
+  document.querySelectorAll('.form-tab').forEach(t => t.classList.toggle('active', t.textContent.includes(name==='add'?'新增':'聯絡')));
+  document.getElementById('formAdd').classList.toggle('active', name==='add');
+  document.getElementById('formContact').classList.toggle('active', name==='contact');
 }
 
-async function delItem(id) {
-  // LEARN: DELETE 方法；RESTful 風格把 id 放在 URL，而不是 body
-  await fetch('/api/items/' + id, { method: 'DELETE' });
+// LEARN: 分類頁籤切換
+function switchTab(el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentType = el.dataset.type;
   loadItems();
 }
 
-loadItems(); // LEARN: 頁面載入時先拉一次列表
+// LEARN: 讀取列表（支援 type 同 search 過濾）
+async function loadItems() {
+  const search = document.getElementById('searchInput').value;
+  let url = `/api/items?type=${currentType}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  const items = await (await fetch(url)).json();
+  document.getElementById('itemList').innerHTML = items.length ? items.map(i => `
+    <div class="item">
+      <div class="item-info">
+        <div class="item-title">${i.type==='book'?'📚':'🎬'} ${i.title}${i.year?` (${i.year})`:''}</div>
+        <div class="item-meta">${renderStars(i.rating)} · ${i.type}</div>
+      </div>
+      <div class="item-actions">
+        <button class="btn-secondary" onclick='openEdit(${JSON.stringify(i)})'>編輯</button>
+        <button class="btn-danger" onclick="delItem(${i.id})">刪除</button>
+      </div>
+    </div>`).join('') : '<div style="color:var(--muted);text-align:center;padding:1rem;">暫無資料</div>';
+  loadStats();
+}
+
+// LEARN: 統計儀表板資料
+async function loadStats() {
+  const s = await (await fetch('/api/stats')).json();
+  document.getElementById('statTotal').textContent = s.total;
+  document.getElementById('statBooks').textContent = s.books;
+  document.getElementById('statMovies').textContent = s.movies;
+  document.getElementById('statAvg').textContent = s.avgRating;
+}
+
+// LEARN: 新增收藏；按鈕變 Loading State（載入中... 不可點），模擬外部 API 呼叫體驗
+async function addItem() {
+  const btn = document.getElementById('addBtn');
+  const type = document.getElementById('addType').value;
+  const title = document.getElementById('addTitle').value.trim();
+  if (!title) return;
+  // LEARN: Loading State = 非同步操作期間嘅 UI 回饋，PM 對應 User Experience 嘅等待狀態設計
+  btn.disabled = true; btn.textContent = '載入中...';
+  try {
+    const r = await fetch('/api/items', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type, title, rating:addRatingVal}) });
+    if (r.status === 429) { alert('⚠️ 新增太頻繁！每分鐘最多5筆，請稍後再試（429 Rate Limit）'); }
+    else { document.getElementById('addTitle').value=''; addRatingVal=0; document.querySelectorAll('#addStars .star').forEach(s=>s.classList.remove('filled')); loadItems(); loadRateLimit(); loadLogs(); }
+  } finally { btn.disabled = false; btn.textContent = '新增收藏'; }
+}
+
+// LEARN: 刪除
+async function delItem(id) {
+  if (!confirm('確定刪除？')) return;
+  await fetch(`/api/items/${id}`, { method:'DELETE' });
+  loadItems(); loadLogs();
+}
+
+// LEARN: Modal 編輯彈窗
+function openEdit(item) {
+  document.getElementById('editId').value = item.id;
+  document.getElementById('editType').value = item.type;
+  document.getElementById('editTitle').value = item.title;
+  document.getElementById('editYear').value = item.year || '';
+  editRatingVal = item.rating || 0;
+  document.getElementById('editRating').value = editRatingVal;
+  document.querySelectorAll('#editStars .star').forEach((s,i) => s.classList.toggle('filled', i < editRatingVal));
+  document.getElementById('editModal').classList.add('show');
+}
+function closeModal() { document.getElementById('editModal').classList.remove('show'); }
+async function saveEdit() {
+  const id = document.getElementById('editId').value;
+  await fetch(`/api/items/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+    type:document.getElementById('editType').value, title:document.getElementById('editTitle').value,
+    year:document.getElementById('editYear').value, rating:editRatingVal
+  })});
+  closeModal(); loadItems(); loadLogs();
+}
+
+// LEARN: 匯出 JSON 下載
+function exportJSON() { window.open('/api/export', '_blank'); }
+
+// LEARN: 聯絡表單提交；存 SQLite contacts 表，未來可接 Webhook 通知
+async function submitContact() {
+  const name = document.getElementById('cName').value.trim();
+  const email = document.getElementById('cEmail').value.trim();
+  if (!name || !email) { alert('姓名同電郵必填'); return; }
+  await fetch('/api/contact', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+    name, email, phone:document.getElementById('cPhone').value, message:document.getElementById('cMessage').value
+  })});
+  alert('✅ 查詢已提交！'); document.getElementById('cName').value=''; document.getElementById('cEmail').value=''; document.getElementById('cPhone').value=''; document.getElementById('cMessage').value=''; loadLogs();
+}
+
+// LEARN: 環境資訊（NODE_ENV）
+async function loadEnv() {
+  const e = await (await fetch('/api/env')).json();
+  document.getElementById('envBadge').textContent = `ENV: ${e.nodeEnv}`;
+}
+
+// LEARN: Rate Limit 剩餘次數顯示
+async function loadRateLimit() {
+  const r = await (await fetch('/api/rate-limit')).json();
+  const el = document.getElementById('rateInfo');
+  if (r.remaining <= 0) { el.innerHTML = `<span class="rate-warning">⚠️ 已達上限！${r.resetIn}秒後恢復</span>`; }
+  else { el.textContent = `今日可新增次數：${r.remaining}/5（已用 ${r.used}）`; }
+}
+
+// LEARN: 系統事件日誌（每3秒自動更新，模擬即時 Logging / Webhook）
+async function loadLogs() {
+  const logs = await (await fetch('/api/logs')).json();
+  document.getElementById('logList').innerHTML = logs.length ? logs.map(l => `
+    <div class="log-entry"><span class="log-time">${l.time}</span> <span class="log-action">${l.action}</span> — ${l.detail}</div>
+  `).join('') : '<div style="color:var(--muted);">暫無紀錄</div>';
+}
+
+// LEARN: 頁面載入初始化 + 定時更新日誌
+loadEnv(); loadItems(); loadRateLimit(); loadLogs();
+setInterval(loadLogs, 3000);
+setInterval(loadRateLimit, 10000);
 </script>
 </body>
 </html>
